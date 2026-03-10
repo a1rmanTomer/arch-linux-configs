@@ -1,0 +1,149 @@
+# function to compile with the tomer.h library utils:
+function gt() {
+    gcc -Wall -g "$@" -ltomer
+}
+
+#creating cs2 plugin project folder:
+function cs2initproj() {
+    if [ -z "$1" ]; then
+        echo "Usage: cs2initproj ProjectName"
+        return 1
+    fi
+
+    local PROJ_NAME=$1
+    local TARGET_DIR="$(pwd)/$PROJ_NAME"
+
+    echo "Creating project '$PROJ_NAME' in: $TARGET_DIR"
+
+    # 1. Create the project
+    dotnet new cssplugin -n "$PROJ_NAME" -o "$TARGET_DIR" --PluginName "$PROJ_NAME"
+
+    # Find the project file
+    local PROJECT_FILE=$(ls "$TARGET_DIR"/*.csproj 2>/dev/null)
+
+    if [ -f "$PROJECT_FILE" ]; then
+        # 2. Fix the TargetFramework to net8.0
+        sed -i 's/<TargetFramework>net7.0<\/TargetFramework>/<TargetFramework>net8.0<\/TargetFramework>/g' "$PROJECT_FILE"
+        echo "✓ Updated TargetFramework to net8.0"
+
+        # 3. Inject the ProjectReference before the closing </Project> tag
+        # We use a cleaner sed approach to insert the block at the end
+        sed -i '/<\/Project>/i \
+  <ItemGroup>\
+    <ProjectReference Include="..\\TomerCore\\TomerCore.csproj" />\
+  </ItemGroup>' "$PROJECT_FILE"
+        echo "✓ Added ProjectReference to TomerCore"
+
+        # 4. Restore dependencies without leaving the current directory
+        dotnet restore "$PROJECT_FILE"
+        echo "✓ Dependencies restored for $PROJ_NAME"
+    else
+        echo "⚠ Error: Could not find the generated .csproj file."
+        return 1
+    fi
+}
+
+
+# Function to compile a C file with specific flags and error handling
+function cb() {
+  # Define flags as a shell array to ensure proper argument passing
+  local flags=(-Wall -Wextra -std=c99 -g)
+  local source_file="$1"
+  local output_file="${source_file%.c}"
+
+  # Check if a file was provided
+  if [ $# -eq 0 ]; then
+    echo "Error: No input file specified. Usage: cbuild <filename.c>"
+    return 1
+  fi
+
+  # Check if the file exists
+  if [[ ! -f "$source_file" ]]; then
+    echo "Error: File not found: '$source_file'"
+    return 1
+  fi
+
+  echo "Compiling $source_file into $output_file..."
+  
+  # Pass the array of flags using "${flags[@]}" to preserve individual arguments
+  gcc "${flags[@]}" "$source_file" -o "$output_file"
+
+  # Check compilation status
+  if [ $? -eq 0 ]; then
+    echo "Success: Executable '$output_file' created."
+  else
+    echo "Error: Compilation failed. Please check the errors above."
+    return 1
+  fi
+}
+
+# Function to compile a C file with minimal flags (ignoring warnings)
+function cnw() {
+  # We use minimal flags here: no -Wall or -Wextra
+  local flags=(-std=c99 -g)
+  local source_file="$1"
+  local output_file="${source_file%.c}"
+
+  # Check if a file was provided
+  if [ $# -eq 0 ]; then
+    echo "Error: No input file specified. Usage: cnw <filename.c>"
+    return 1
+  fi
+
+  # Check if the file exists
+  if [[ ! -f "$source_file" ]]; then
+    echo "Error: File not found: '$source_file'"
+    return 1
+  fi
+
+  echo "Compiling $source_file into $output_file (ignoring most warnings)..."
+
+  # Pass the array of flags using "${flags[@]}"
+  gcc "${flags[@]}" "$source_file" -o "$output_file"
+
+  # Check compilation status
+  if [ $? -eq 0 ]; then
+    echo "Success: Executable '$output_file' created."
+  else
+    echo "Error: Compilation failed. Please check the errors above."
+    return 1
+  fi
+}
+
+raybuild() {
+    if [ $# -eq 0 ]; then
+        echo "Usage: raybuild <file1.c> [file2.c ...] [-o output_name]"
+        return 1
+    fi
+
+    local sources=()
+    local output="game"
+
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -o)
+                output="$2"
+                shift 2
+                ;;
+            *)
+                sources+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    # Execute GCC
+    # "${sources[@]}" expands every file in the array correctly
+    gcc "${sources[@]}" -o "$output" \
+        -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
+
+    # Check if GCC succeeded
+    if [ $? -eq 0 ]; then
+        echo "Successfully built: ./$output"
+    else
+        echo "Build failed."
+        return 1
+    fi
+}
+

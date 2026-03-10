@@ -1,0 +1,47 @@
+# Common aliases and functions for both Zsh and Bash
+
+# custom aliases for simple functions
+alias cdgit='cd /mnt/windows/Users/extra/Desktop/gitclones'
+alias ipadshare='uxplay -p 7000 -avdec'
+
+#custom complex OS functions
+cpfile() {
+    wl-copy --type text/uri-list "file://$(realpath "$1")"
+}
+
+# BakkesMod Update Command
+update_bm() {
+    echo "Extracting DLL from desktop ZIP..."
+    7z e "/home/tomer/Desktop/no-touch-things-to-keep/BakkesModSetup.zip" bakkesmod.dll -r -o"/home/tomer/Games/Heroic/Prefixes/default/Rocket League/drive_c/Program Files/BakkesMod/" -y
+
+    echo "Disabling Safe Mode..."
+    mkdir -p "/home/tomer/Games/Heroic/Prefixes/default/Rocket League/drive_c/Program Files/BakkesMod/cfg"
+    echo 'EnableSafeMode "0"' > "/home/tomer/Games/Heroic/Prefixes/default/Rocket League/drive_c/Program Files/BakkesMod/cfg/config.cfg"
+
+    echo "Update complete! You can now launch the game."
+}
+
+# BakkesMod Directory Alias
+alias cd_bm='cd "/home/tomer/Games/Heroic/Prefixes/default/Rocket League/drive_c/users/steamuser/AppData/Roaming/bakkesmod/bakkesmod/"'
+
+# Plugin Installer Function
+bm_plugin_install() {
+    local PLUGIN_ZIP="$1"
+    local BM_REAL_PATH="/home/tomer/Games/Heroic/Prefixes/default/Rocket League/drive_c/users/steamuser/AppData/Roaming/bakkesmod/bakkesmod/"
+
+    if [ -f "$PLUGIN_ZIP" ]; then
+        echo "Target directory: $BM_REAL_PATH"
+        echo "Installing plugin..."
+        
+        # Extract with full paths to ensure /data/ and /plugins/ land in the right spot
+        7z x "$PLUGIN_ZIP" -o"$BM_REAL_PATH" -y
+        
+        echo "Installation finished."
+        echo "In Rocket League, open F6 console and type: plugin reload LFM"
+    else
+        echo "Error: File not found. Please provide the full path to the ZIP file."
+    fi
+}
+
+#custom coding functions for builsd and stuff
+[[ -f ~/.coding_aliases ]] && source ~/.coding_aliases
