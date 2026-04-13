@@ -1,3 +1,20 @@
+# --- Tomer's Unified C Library Path ---
+export TOMER_LIB_PATH="$HOME/tomer_lib"
+
+# 1. For #include <tomer.h>
+export C_INCLUDE_PATH="$TOMER_LIB_PATH:$C_INCLUDE_PATH"
+
+# 2. For linking during compilation (gcc main.c -ltomer)
+export LIBRARY_PATH="$TOMER_LIB_PATH:$LIBRARY_PATH"
+
+# 3. For runtime execution (loading libtomer.so into memory)
+export LD_LIBRARY_PATH="$TOMER_LIB_PATH:$LD_LIBRARY_PATH"
+
+# ======================================================
+# ======================================================
+# ======================================================
+
+
 # function to compile with the tomer.h library utils:
 function gt() {
     gcc -Wall -g "$@" -ltomer
